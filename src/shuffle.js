@@ -777,9 +777,29 @@ class Shuffle {
     this._resetCols();
 
     var items = this._getFilteredItems();
+
+    
     items = sorter(items, opts);
 
+
+    /**
+     * We're getting the concealed items so that the layout displays all items
+     */
+    if (this.options.showHidden === true){
+      var concealed = this._getConcealedItems();
+      
+      if(concealed.length > 0) {
+        for(var i = 0; i < concealed.length; i++) {
+          items.push(concealed[i]);
+        }
+        
+      }    
+    }
+
+
     this._layout(items);
+
+
 
     // `_layout` always happens after `_shrink`, so it's safe to process the style
     // queue here with styles from the shrink method.
@@ -1102,6 +1122,9 @@ Shuffle.options = {
 
   // Whether to use transforms or absolute positioning.
   useTransforms: true,
+
+  // Include hidden elements in container sizing
+  showHidden: false,
 };
 
 // Expose for testing. Hack at your own risk.

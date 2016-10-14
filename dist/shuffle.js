@@ -151,7 +151,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @constructor
 	   */
 	  function Shuffle(element) {
-	    var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+	    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 	
 	    _classCallCheck(this, Shuffle);
 	
@@ -297,8 +297,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: '_filter',
 	    value: function _filter() {
-	      var category = arguments.length <= 0 || arguments[0] === undefined ? this.lastFilter : arguments[0];
-	      var collection = arguments.length <= 1 || arguments[1] === undefined ? this.items : arguments[1];
+	      var category = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.lastFilter;
+	      var collection = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.items;
 	
 	      var set = this._getFilteredSets(category, collection);
 	
@@ -413,7 +413,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: '_initItems',
 	    value: function _initItems() {
-	      var items = arguments.length <= 0 || arguments[0] === undefined ? this.items : arguments[0];
+	      var items = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.items;
 	
 	      items.forEach(function (item) {
 	        item.init();
@@ -428,7 +428,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: '_disposeItems',
 	    value: function _disposeItems() {
-	      var items = arguments.length <= 0 || arguments[0] === undefined ? this.items : arguments[0];
+	      var items = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.items;
 	
 	      items.forEach(function (item) {
 	        item.dispose();
@@ -457,7 +457,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: '_setTransitions',
 	    value: function _setTransitions() {
-	      var items = arguments.length <= 0 || arguments[0] === undefined ? this.items : arguments[0];
+	      var items = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.items;
 	
 	      var speed = this.options.speed;
 	      var easing = this.options.easing;
@@ -588,7 +588,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: '_setColumns',
 	    value: function _setColumns() {
-	      var containerWidth = arguments.length <= 0 || arguments[0] === undefined ? Shuffle.getSize(this.element).width : arguments[0];
+	      var containerWidth = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : Shuffle.getSize(this.element).width;
 	
 	      var gutter = this._getGutterSize(containerWidth);
 	      var columnWidth = this._getColumnSize(containerWidth, gutter);
@@ -646,7 +646,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: '_dispatch',
 	    value: function _dispatch(name) {
-	      var details = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+	      var details = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 	
 	      if (this.isDestroyed) {
 	        return;
@@ -754,7 +754,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function _shrink() {
 	      var _this4 = this;
 	
-	      var collection = arguments.length <= 0 || arguments[0] === undefined ? this._getConcealedItems() : arguments[0];
+	      var collection = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this._getConcealedItems();
 	
 	      var count = 0;
 	      collection.forEach(function (item) {
@@ -1020,7 +1020,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'sort',
 	    value: function sort() {
-	      var opts = arguments.length <= 0 || arguments[0] === undefined ? this.lastSort : arguments[0];
+	      var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.lastSort;
 	
 	      if (!this.isEnabled) {
 	        return;
@@ -1029,7 +1029,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this._resetCols();
 	
 	      var items = this._getFilteredItems();
+	
 	      items = (0, _sorter2.default)(items, opts);
+	
+	      /**
+	       * We're getting the concealed items so that the layout displays all items
+	       */
+	      if (this.options.showHidden === true) {
+	        var concealed = this._getConcealedItems();
+	
+	        if (concealed.length > 0) {
+	          for (var i = 0; i < concealed.length; i++) {
+	            items.push(concealed[i]);
+	          }
+	        }
+	      }
 	
 	      this._layout(items);
 	
@@ -1394,7 +1408,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  staggerAmountMax: 250,
 	
 	  // Whether to use transforms or absolute positioning.
-	  useTransforms: true
+	  useTransforms: true,
+	
+	  // Include hidden elements in container sizing
+	  showHidden: false
 	};
 	
 	// Expose for testing. Hack at your own risk.
@@ -1417,19 +1434,38 @@ return /******/ (function(modules) { // webpackBootstrap
 	// https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent#Polyfill
 	
 	try {
-	  new window.CustomEvent("test");
+	    var ce = new window.CustomEvent('test');
+	    ce.preventDefault();
+	    if (ce.defaultPrevented !== true) {
+	        // IE has problems with .preventDefault() on custom events
+	        // http://stackoverflow.com/questions/23349191
+	        throw new Error('Could not prevent default');
+	    }
 	} catch(e) {
-	 var CustomEvent = function(event, params) {
-	      var evt;
-	      params = params || {
-	          bubbles: false,
-	          cancelable: false,
-	          detail: undefined
-	      };
+	  var CustomEvent = function(event, params) {
+	    var evt, origPrevent;
+	    params = params || {
+	      bubbles: false,
+	      cancelable: false,
+	      detail: undefined
+	    };
 	
-	      evt = document.createEvent("CustomEvent");
-	      evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
-	      return evt;
+	    evt = document.createEvent("CustomEvent");
+	    evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+	    origPrevent = evt.preventDefault;
+	    evt.preventDefault = function () {
+	      origPrevent.call(this);
+	      try {
+	        Object.defineProperty(this, 'defaultPrevented', {
+	          get: function () {
+	            return true;
+	          }
+	        });
+	      } catch(e) {
+	        this.defaultPrevented = true;
+	      }
+	    };
+	    return evt;
 	  };
 	
 	  CustomEvent.prototype = window.Event.prototype;
@@ -1882,7 +1918,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 *     the computed style.
 	 */
 	function getNumberStyle(element, style) {
-	  var styles = arguments.length <= 2 || arguments[2] === undefined ? window.getComputedStyle(element, null) : arguments[2];
+	  var styles = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : window.getComputedStyle(element, null);
 	
 	  var value = (0, _getNumber2.default)(styles[style]);
 	
